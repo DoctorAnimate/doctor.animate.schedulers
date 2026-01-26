@@ -1,0 +1,195 @@
+name: VIDEO EDITING SCHEDULER (QUALITY)
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '30 7 * * *'   # Runs at 1:00 PM IST
+  #   - cron: '30 12 * * *'  # Runs at 6:00 PM IST
+
+jobs:
+  run-on-kaggle:
+    runs-on: ubuntu-latest
+    steps:
+      # =======================
+      # 1. Checkout Repo
+      # =======================
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            IPNBY/quality.ipynb
+            VIDEO_EDITING_QUALITY
+            counter.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Configure Sparse Checkout for specific files
+      - name: Configure Sparse Checkout
+        run: |
+          VIDEO_NUMBER=$(cat counter.txt)
+          echo "VIDEOS/Video_${VIDEO_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/test.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+
+      # =======================
+      # 2. Install Kaggle API
+      # =======================
+      - name: Install Kaggle API
+        run: pip install kaggle
+
+      # =======================
+      # 3. Configure Kaggle API
+      # =======================
+      - name: Configure Kaggle
+        run: |
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"${{ secrets.KAGGLE_USERNAME }}\",\"key\":\"${{ secrets.KAGGLE_KEY }}\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      # =======================
+      # 4. Package Repo Files as Kaggle Dataset
+      # =======================
+      - name: Prepare Dataset Folder
+        run: |
+          mkdir -p kaggle-dataset
+          cp -r REELS kaggle-dataset/ || true
+          cp -r VIDEO_EDITING_QUALITY kaggle-dataset/ || true
+          cp counter.txt kaggle-dataset/ || true
+          cp requirements.txt kaggle-dataset/ || true
+          cp IPNBY/quality.ipynb kaggle-dataset/
+          
+          # Include the sparse-checked video file
+          VIDEO_NUMBER=$(cat counter.txt)
+          mkdir -p kaggle-dataset/VIDEOS
+          cp "VIDEOS/Video_${VIDEO_NUMBER}.mp4" kaggle-dataset/VIDEOS/ || echo "⚠️ Video file not found: VIDEOS/Video_${VIDEO_NUMBER}.mp4"
+
+          # Kaggle dataset metadata
+          cat > kaggle-dataset/dataset-metadata.json <<EOF
+          {
+            "id": "${{ secrets.KAGGLE_USERNAME }}/video-editing-data",
+            "title": "Video Editing Data",
+            "licenses": [
+              { "name": "CC0-1.0" }
+            ],
+            "isPrivate": true
+          }
+          EOF
+
+      - name: Create or Update Kaggle Dataset
+        run: |
+          for i in $(seq 1 5); do
+            if kaggle datasets status ${{ secrets.KAGGLE_USERNAME }}/video-editing-data >/dev/null 2>&1; then
+              echo "✅ Dataset exists, versioning... (Attempt $i)"
+              if kaggle datasets version -p kaggle-dataset -m "Update dataset for run" --dir-mode zip; then
+                echo "✅ Versioning successful"
+                break
+              fi
+            else
+              echo "⚡ Dataset not found, creating... (Attempt $i)"
+              if kaggle datasets create -p kaggle-dataset --dir-mode zip; then
+                echo "✅ Creation successful"
+                break
+              fi
+            fi
+            
+            if [ $i -lt 5 ]; then
+              echo "⚠️ Command failed. Retrying in 30 seconds..."
+              sleep 30
+            else
+              echo "❌ Command failed after 5 attempts."
+              exit 1
+            fi
+          done
+
+      - name: List datasets for ${{ secrets.KAGGLE_USERNAME }}
+        run: |
+          echo "📦 Listing datasets for user: ${{ secrets.KAGGLE_USERNAME }}"
+          sleep 60  # Wait a bit to ensure Kaggle has updated
+          kaggle datasets list --user ${{ secrets.KAGGLE_USERNAME }}
+
+      # =======================
+      # 5. Prepare Kernel Metadata
+      # =======================
+      - name: Prepare Kernel Metadata
+        run: |
+          cat > kernel-metadata.json <<EOF
+          {
+            "id": "${{ secrets.KAGGLE_USERNAME }}/video-editing-scheduler-notebook",
+            "title": "Video Editing Scheduler Notebook",
+            "code_file": "IPNBY/quality.ipynb",
+            "language": "python",
+            "kernel_type": "notebook",
+            "is_private": true,
+            "enable_gpu": true,
+            "enable_internet": true,
+            "dataset_sources": [
+              "${{ secrets.KAGGLE_USERNAME }}/video-editing-data"
+            ],
+            "competition_sources": [],
+            "kernel_sources": [],
+            "model_sources": []
+          }
+          EOF
+
+      # =======================
+      # 6. Push Notebook Kernel (auto-runs)
+      # =======================
+      - name: Push notebook to Kaggle
+        run: kaggle kernels push -p .
+
+      # =======================
+      # 7. Wait for Kaggle Notebook to finish
+      # =======================
+      - name: Wait for Kaggle notebook to finish
+        run: |
+          KERNEL_ID="${{ secrets.KAGGLE_USERNAME }}/video-editing-scheduler-notebook"
+          for i in $(seq 1 600); do
+            STATUS=$(kaggle kernels status $KERNEL_ID)
+            echo "[$i] Status: $STATUS"
+            if [[ "$STATUS" == *"KernelWorkerStatus.COMPLETE"* ]]; then
+              echo "✅ Kernel Complete"
+              exit 0
+            elif [[ "$STATUS" == *"KernelWorkerStatus.ERROR"* ]]; then
+              echo "❌ Kernel Error"
+              exit 1
+            elif [[ "$STATUS" == *"KernelWorkerStatus.RUNNING"* || "$STATUS" == *"KernelWorkerStatus.QUEUED"* ]]; then
+              echo "✅ Kernel running"
+            fi
+            sleep 300
+          done
+
+      # =======================
+      # 8. Download Notebook Outputs
+      # =======================
+      - name: Download notebook outputs
+        run: kaggle kernels output ${{ secrets.KAGGLE_USERNAME }}/video-editing-scheduler-notebook -p ./outputs
+
+      # Copy processed videos from download to local folders
+      - name: Copy processed videos to local folders
+        run: |
+          echo "📁 Copying processed videos from Kaggle outputs..."
+          cp -r ./outputs/repo/REELS/* REELS/ 2>/dev/null || echo "No REELS files to copy"
+          echo "✅ Copy completed. Current contents:"
+          ls -la REELS/ 2>/dev/null || echo "REELS folder empty"
+
+      # =======================
+      # 9. Commit results back to GitHub
+      # =======================
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add --sparse REELS || echo "Nothing to add"
+          git commit -m "Update reels after Kaggle GPU notebook run" || echo "No changes"
+          git pull --rebase origin main || echo "No changes"
+          git push || echo "No changes"
+
+      # =======================
+      # 10. Delete Kaggle Dataset
+      # =======================
+      # - name: Delete Kaggle Dataset
+      #   run: |
+      #     echo "🗑️ Deleting dataset ${{ secrets.KAGGLE_USERNAME }}/video-editing-data..."
+      #     kaggle datasets delete ${{ secrets.KAGGLE_USERNAME }}/video-editing-data --yes || echo "⚠️ Dataset delete command may have failed"

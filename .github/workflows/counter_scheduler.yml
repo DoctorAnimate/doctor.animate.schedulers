@@ -1,0 +1,47 @@
+name: COUNTER UPDATE SCHEDULER
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '30 6 * * *'   # Runs at 12:00 PM IST
+  #   - cron: '0 12 * * *'   # Runs at 5:30 PM IST
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            counter.py
+            counter.txt
+          fetch-depth: 1
+
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'  # Specify the Python version you need
+
+      # Install the necessary packages
+      - name: Installed package list
+        run: apt list --installed
+
+      # Run your Python script
+      - name: Run Python script
+        run: python3 counter.py
+        
+      # Check if counter.txt has been modified, pull, and push the modified changes.
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add counter.txt
+          git commit -m "Update counter.txt after processing" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"

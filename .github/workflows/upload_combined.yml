@@ -1,0 +1,280 @@
+name: UPLOAD COMBINED (WITH COUNTER)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # - cron: '30 7 * * *'    # 1:00 PM IST (7:30 AM UTC)
+    # - cron: '30 9 * * *'    # 3:00 PM IST (9:30 AM UTC)
+    - cron: '30 11 * * *'   # 5:00 PM IST (11:30 AM UTC)
+    # - cron: '30 13 * * *'   # 7:00 PM IST (1:30 PM UTC)
+    - cron: '30 15 * * *'   # 9:00 PM IST (3:30 PM UTC)
+
+jobs:
+  update-counter:
+    runs-on: ubuntu-latest
+    outputs:
+      reel_number: ${{ steps.increment.outputs.reel_number }}
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            counter_upload.py
+            counter_upload.txt
+          fetch-depth: 1
+
+      # Set up Python for counter script
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Increment upload counter
+      - name: Increment Counter
+        id: increment
+        run: |
+          python3 counter_upload.py
+          REEL_NUMBER=$(cat counter_upload.txt)
+          echo "reel_number=$REEL_NUMBER" >> $GITHUB_OUTPUT
+          echo "Updated upload counter to: $REEL_NUMBER"
+
+      # Commit updated counter file
+      - name: Commit Counter Update
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add counter_upload.txt
+          git commit -m "Update upload counter to $REEL_NUMBER" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
+
+  instagram-post:
+    needs: update-counter
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            INSTAGRAM/
+            AI_MODELS/
+            VIDEO_EDITING_QUALITY/
+            counter_upload.txt
+            video_end_tracker.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Pull latest changes
+      - name: Pull Latest Changes
+        run: git pull origin main
+
+      # Configure sparse checkout for specific reel
+      - name: Configure Sparse Checkout for Specific Reel
+        run: |
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+          
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: |
+         python3 -m pip install --upgrade pip
+         pip3 install -r requirements.txt
+
+      # Run Instagram post upload
+      - name: Run Instagram Post Upload
+        run: python3 INSTAGRAM/instagram.py
+        
+      # Commit changes
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add INSTAGRAM/.env
+          git commit -m "Update Instagram .env after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
+
+  instagram-story:
+    needs: [update-counter, instagram-post]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            INSTAGRAM/
+            counter_upload.txt
+            video_end_tracker.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Pull latest changes
+      - name: Pull Latest Changes
+        run: git pull origin main
+
+      # Configure sparse checkout for specific reel
+      - name: Configure Sparse Checkout for Specific Reel
+        run: |
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+      
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: |
+         python3 -m pip install --upgrade pip
+         pip3 install -r requirements.txt
+
+      # Run Instagram story upload
+      - name: Run Instagram Story Upload
+        run: python3 INSTAGRAM/instagram_story.py
+        
+      # Commit changes
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add INSTAGRAM/.env
+          git commit -m "Update Instagram .env after story_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
+
+  facebook-post:
+    needs: [update-counter, instagram-story]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            FACEBOOK/
+            AI_MODELS/
+            VIDEO_EDITING_QUALITY/
+            counter_upload.txt
+            video_end_tracker.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Pull latest changes
+      - name: Pull Latest Changes
+        run: git pull origin main
+
+      # Configure sparse checkout for specific reel
+      - name: Configure Sparse Checkout for Specific Reel
+        run: |
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: |
+         python3 -m pip install --upgrade pip
+         pip3 install -r requirements.txt
+
+      # Run Facebook post upload
+      - name: Run Facebook Post Upload
+        run: python3 FACEBOOK/facebook.py
+        
+      # Commit changes
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add FACEBOOK/.env
+          git commit -m "Update Facebook .env after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
+
+  facebook-story:
+    needs: [update-counter, facebook-post]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            FACEBOOK/
+            counter_upload.txt
+            video_end_tracker.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Pull latest changes
+      - name: Pull Latest Changes
+        run: git pull origin main
+
+      # Configure sparse checkout for specific reel
+      - name: Configure Sparse Checkout for Specific Reel
+        run: |
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: |
+         python3 -m pip install --upgrade pip
+         pip3 install -r requirements.txt
+
+      # Run Facebook story upload
+      - name: Run Facebook Story Upload
+        run: python3 FACEBOOK/facebook_story.py
+
+      # Commit changes
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add FACEBOOK/.env
+          git commit -m "Update Facebook .env after story_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"

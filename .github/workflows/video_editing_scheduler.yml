@@ -1,0 +1,62 @@
+name: VIDEO EDITING SCHEDULER
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '30 9 * * *'   # Runs at 3:00 PM IST
+  #   - cron: '30 14 * * *'  # Runs at 8:00 PM IST
+  
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            REELS/
+            VIDEO_EDITING/
+            counter.txt
+            requirements.txt
+          fetch-depth: 1
+
+      # Read the counter value and set sparse-checkout for the specific video
+      - name: Configure Sparse Checkout for Specific Video
+        run: |
+          VIDEO_NUMBER=$(cat counter.txt)
+          echo "Setting sparse-checkout for Video_${VIDEO_NUMBER}.mp4"
+          echo "VIDEOS/Video_${VIDEO_NUMBER}.mp4" >> .git/info/sparse-checkout
+          git sparse-checkout reapply
+
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'  # Specify the Python version you need
+      
+      # Install the necessary packages
+      - name: Installed package list
+        run: apt list --installed
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+         python3 -m pip install --upgrade pip
+         pip3 install -r requirements.txt
+
+      # Run your Python script
+      - name: Run Python script
+        run: python3 VIDEO_EDITING/video_editing.py
+
+      # Commit changes if REELS was modified, pull, and push the modified changes.
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add REELS
+          git commit -m "Update REELS after processing" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
