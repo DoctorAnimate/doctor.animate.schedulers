@@ -1,2 +1,2 @@
 # doctor.animate.schedulers
-PUBLIC SCHEDULERS.
+PUBLIC SCHEDULERS
