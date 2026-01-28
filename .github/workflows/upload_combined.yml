@@ -65,7 +65,7 @@ jobs:
           sparse-checkout: |
             INSTAGRAM/
             AI_MODELS/
-            VIDEO_EDITING_QUALITY/
+            VIDEO_EDITING_WATERMARK/
             counter_upload.txt
             video_end_tracker.txt
             requirements.txt
@@ -179,7 +179,7 @@ jobs:
           sparse-checkout: |
             FACEBOOK/
             AI_MODELS/
-            VIDEO_EDITING_QUALITY/
+            VIDEO_EDITING_WATERMARK/
             counter_upload.txt
             video_end_tracker.txt
             requirements.txt

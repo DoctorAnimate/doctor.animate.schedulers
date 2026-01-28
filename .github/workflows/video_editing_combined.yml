@@ -63,11 +63,12 @@ jobs:
           repository: DoctorAnimate/doctor.animate
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           sparse-checkout: |
-            IPNBY/quality.ipynb
-            VIDEO_EDITING_QUALITY
+            IPNBY/watermark_quality.ipynb
+            VIDEO_EDITING_WATERMARK
             counter_video_editing.txt
             video_end_tracker.txt
             requirements.txt
+            requirementswatermark.txt
             kaggle_account_tracker.txt
           fetch-depth: 1
 
@@ -144,11 +145,12 @@ jobs:
         run: |
           mkdir -p kaggle-dataset
           cp -r REELS kaggle-dataset/ || true
-          cp -r VIDEO_EDITING_QUALITY kaggle-dataset/ || true
+          cp -r VIDEO_EDITING_WATERMARK kaggle-dataset/ || true
           cp counter_video_editing.txt kaggle-dataset/ || true
           cp video_end_tracker.txt kaggle-dataset/ || true
+          cp requirementswatermark.txt kaggle-dataset/ || true
           cp requirements.txt kaggle-dataset/ || true
-          cp IPNBY/quality.ipynb kaggle-dataset/
+          cp IPNBY/watermark_quality.ipynb kaggle-dataset/
           
           # Include the sparse-checked video file
           VIDEO_NUMBER="${{ needs.update-counter.outputs.video_number }}"
@@ -212,7 +214,7 @@ jobs:
           {
             "id": "$KAGGLE_USERNAME/video-editing-scheduler-notebook",
             "title": "Video Editing Scheduler Notebook",
-            "code_file": "IPNBY/quality.ipynb",
+            "code_file": "IPNBY/watermark_quality.ipynb",
             "language": "python",
             "kernel_type": "notebook",
             "is_private": true,
