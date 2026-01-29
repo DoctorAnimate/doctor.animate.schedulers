@@ -1,13 +1,10 @@
-name: VIDEO EDITING COMBINED (WITH COUNTER)
+name: VIDEO EDITING PART 1 - TRIGGER KAGGLE
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '30 18 * * *'   # 12:00 AM IST (6:30 PM UTC previous day)
-    # - cron: '30 22 * * *'   # 4:00 AM IST (10:30 PM UTC previous day)
-    - cron: '30 2 * * *'    # 8:00 AM IST (2:30 AM UTC)
-    # - cron: '30 6 * * *'    # 12:00 PM IST (6:30 AM UTC)
-    # - cron: '30 10 * * *'   # 4:00 PM IST (10:30 AM UTC)
+    - cron: '0 5 * * *'     # 10:30 AM IST (5:00 AM UTC)
 
 jobs:
   update-counter:
@@ -231,90 +228,8 @@ jobs:
 
       # Push Notebook to Kaggle
       - name: Push Notebook to Kaggle
-        run: kaggle kernels push -p .
-
-      # Wait for Kaggle Notebook to Finish
-      - name: Wait for Kaggle Notebook to Finish
         run: |
-          KAGGLE_USERNAME="${{ steps.set_kaggle_creds.outputs.kaggle_username }}"
-          KERNEL_ID="$KAGGLE_USERNAME/video-editing-scheduler-notebook"
-          for i in $(seq 1 600); do
-            STATUS=$(kaggle kernels status $KERNEL_ID)
-            echo "[$i] Status: $STATUS"
-            if [[ "$STATUS" == *"KernelWorkerStatus.COMPLETE"* ]]; then
-              echo "✅ Kernel Complete"
-              exit 0
-            elif [[ "$STATUS" == *"KernelWorkerStatus.ERROR"* ]]; then
-              echo "❌ Kernel Error"
-              exit 1
-            elif [[ "$STATUS" == *"KernelWorkerStatus.RUNNING"* || "$STATUS" == *"KernelWorkerStatus.QUEUED"* ]]; then
-              echo "✅ Kernel running"
-            fi
-            sleep 300
-          done
-
-      # Download Notebook Outputs
-      - name: Download Notebook Outputs
-        run: |
-          KAGGLE_USERNAME="${{ steps.set_kaggle_creds.outputs.kaggle_username }}"
-          kaggle kernels output $KAGGLE_USERNAME/video-editing-scheduler-notebook -p ./outputs
-
-      # Copy Processed Videos
-      - name: Copy Processed Videos to Local Folders
-        run: |
-          echo "📁 Copying processed videos from Kaggle outputs..."
-          cp -r ./outputs/repo/REELS/* REELS/ 2>/dev/null || echo "No REELS files to copy"
-          echo "✅ Copy completed. Current contents:"
-          ls -la REELS/ 2>/dev/null || echo "REELS folder empty"
-
-      # Commit Results
-      - name: Commit and Push Changes
-        run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "github-actions@github.com"
-          git add --sparse REELS || echo "Nothing to add"
-          git commit -m "Update reels after Kaggle GPU notebook run (Video ${{ needs.update-counter.outputs.video_number }})" || echo "No changes"
-          git pull --rebase origin main || echo "No changes"
-          git push || echo "No changes"
-
-  rotate-kaggle:
-    needs: run-on-kaggle
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout repository
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          repository: DoctorAnimate/doctor.animate
-          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
-          sparse-checkout: |
-            kaggle_rotation.py
-            kaggle_account_tracker.txt
-          fetch-depth: 1
-
-      # Pull latest changes
-      - name: Pull Latest Changes
-        run: git pull origin main
-
-      # Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12.9'
-
-      # Rotate to next Kaggle account
-      - name: Rotate Kaggle Account
-        run: |
-          echo "🔄 Rotating Kaggle account for next workflow run..."
-          python3 kaggle_rotation.py
-          NEXT_ACCOUNT=$(cat kaggle_account_tracker.txt)
-          echo "✅ Next workflow will use Kaggle account: $NEXT_ACCOUNT"
-
-      # Commit rotation
-      - name: Commit Kaggle Rotation
-        run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "github-actions@github.com"
-          git add kaggle_account_tracker.txt
-          git commit -m "Rotate Kaggle account tracker" || echo "No changes to commit"
-          git push || echo "No changes to push"
+          kaggle kernels push -p .
+          echo "✅ Notebook pushed to Kaggle successfully"
+          echo "📌 Kaggle will process this in the background"
+          echo "🕒 Part 2 workflow will download outputs in ~10 hours"

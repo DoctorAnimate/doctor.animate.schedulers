@@ -1,0 +1,174 @@
+name: VIDEO EDITING PART 2 - DOWNLOAD & ROTATE
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 4 * * *'    # 10:00 AM IST (4:30 AM UTC)
+    - cron: '0 15 * * *'    # 8:30 PM IST (3:00 PM UTC)
+
+jobs:
+  download-and-rotate:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: DoctorAnimate/doctor.animate
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          sparse-checkout: |
+            REELS
+            counter_video_editing.txt
+            kaggle_account_tracker.txt
+            kaggle_rotation.py
+          fetch-depth: 1
+
+      # Pull latest changes
+      - name: Pull Latest Changes
+        run: |
+          git pull origin main
+
+      # Read current Kaggle account number
+      - name: Read Kaggle Account Number
+        id: read_kaggle_account
+        run: |
+          ACCOUNT_NUM=$(cat kaggle_account_tracker.txt)
+          echo "account_number=$ACCOUNT_NUM" >> $GITHUB_OUTPUT
+          echo "📌 Current Kaggle account number: $ACCOUNT_NUM"
+
+      # Read current video number
+      - name: Read Video Number
+        id: read_video_number
+        run: |
+          VIDEO_NUMBER=$(cat counter_video_editing.txt)
+          echo "video_number=$VIDEO_NUMBER" >> $GITHUB_OUTPUT
+          echo "📹 Current video number: $VIDEO_NUMBER"
+
+      # Set Kaggle credentials based on account number
+      - name: Set Kaggle Credentials
+        id: set_kaggle_creds
+        run: |
+          ACCOUNT_NUM=${{ steps.read_kaggle_account.outputs.account_number }}
+          
+          # Dynamically get the username and key from secrets based on account number
+          case $ACCOUNT_NUM in
+            1)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_1 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_1 }}"
+              ;;
+            2)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_2 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_2 }}"
+              ;;
+            3)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_3 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_3 }}"
+              ;;
+            *)
+              echo "❌ Invalid account number: $ACCOUNT_NUM"
+              exit 1
+              ;;
+          esac
+          
+          echo "kaggle_username=$KAGGLE_USERNAME" >> $GITHUB_OUTPUT
+          echo "kaggle_key=$KAGGLE_KEY" >> $GITHUB_OUTPUT
+          echo "✅ Using Kaggle credentials for account $ACCOUNT_NUM"
+          echo "📝 Kaggle Username: $KAGGLE_USERNAME"
+
+      # Install Kaggle API
+      - name: Install Kaggle API
+        run: pip install kaggle
+
+      # Configure Kaggle with credentials
+      - name: Configure Kaggle
+        run: |
+          mkdir -p ~/.kaggle
+          KAGGLE_USERNAME="${{ steps.set_kaggle_creds.outputs.kaggle_username }}"
+          KAGGLE_KEY="${{ steps.set_kaggle_creds.outputs.kaggle_key }}"
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+          echo "🔧 Configured Kaggle credentials"
+          echo "📝 Kaggle Username: $KAGGLE_USERNAME"
+
+      # Check Kaggle Notebook Status
+      - name: Check Kaggle Notebook Status
+        id: check_status
+        run: |
+          KAGGLE_USERNAME="${{ steps.set_kaggle_creds.outputs.kaggle_username }}"
+          KERNEL_ID="$KAGGLE_USERNAME/video-editing-scheduler-notebook"
+          STATUS=$(kaggle kernels status $KERNEL_ID)
+          echo "📊 Current Status: $STATUS"
+          
+          if [[ "$STATUS" == *"KernelWorkerStatus.COMPLETE"* ]]; then
+            echo "status=complete" >> $GITHUB_OUTPUT
+            echo "✅ Kernel is complete - will download outputs"
+          elif [[ "$STATUS" == *"KernelWorkerStatus.ERROR"* ]]; then
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "❌ Kernel encountered an error"
+          else
+            echo "status=running" >> $GITHUB_OUTPUT
+            echo "⚠️ Kernel still running/queued - will skip download"
+          fi
+
+      # Download Notebook Outputs (only if complete)
+      - name: Download Notebook Outputs
+        if: steps.check_status.outputs.status == 'complete'
+        run: |
+          KAGGLE_USERNAME="${{ steps.set_kaggle_creds.outputs.kaggle_username }}"
+          kaggle kernels output $KAGGLE_USERNAME/video-editing-scheduler-notebook -p ./outputs
+          echo "✅ Downloaded outputs from Kaggle"
+
+      # Copy Processed Videos (only if complete)
+      - name: Copy Processed Videos to Local Folders
+        if: steps.check_status.outputs.status == 'complete'
+        run: |
+          echo "📁 Copying processed videos from Kaggle outputs..."
+          cp -r ./outputs/repo/REELS/* REELS/ 2>/dev/null || echo "No REELS files to copy"
+          echo "✅ Copy completed. Current contents:"
+          ls -la REELS/ 2>/dev/null || echo "REELS folder empty"
+
+      # Commit Results (only if complete)
+      - name: Commit and Push Changes
+        if: steps.check_status.outputs.status == 'complete'
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add --sparse REELS || echo "Nothing to add"
+          git commit -m "Update reels after Kaggle GPU notebook run (Video ${{ steps.read_video_number.outputs.video_number }})" || echo "No changes"
+          git pull --rebase origin main || echo "No changes"
+          git push || echo "No changes"
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Rotate to next Kaggle account
+      - name: Rotate Kaggle Account
+        run: |
+          echo "🔄 Rotating Kaggle account for next workflow run..."
+          python3 kaggle_rotation.py
+          NEXT_ACCOUNT=$(cat kaggle_account_tracker.txt)
+          echo "✅ Next workflow will use Kaggle account: $NEXT_ACCOUNT"
+
+      # Commit rotation
+      - name: Commit Kaggle Rotation
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add kaggle_account_tracker.txt
+          git commit -m "Rotate Kaggle account tracker" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      # Summary
+      - name: Summary
+        run: |
+          if [[ "${{ steps.check_status.outputs.status }}" == "complete" ]]; then
+            echo "✅ Successfully downloaded outputs and rotated Kaggle account"
+          elif [[ "${{ steps.check_status.outputs.status }}" == "error" ]]; then
+            echo "❌ Kaggle notebook encountered an error - check Kaggle for details"
+          else
+            echo "⚠️ Kaggle notebook still processing - outputs will be downloaded in next run"
+            echo "🔄 Kaggle account rotated for next Part 1 run"
+          fi
