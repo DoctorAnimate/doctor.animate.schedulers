@@ -7,7 +7,7 @@ on:
     # - cron: '30 9 * * *'    # 3:00 PM IST (9:30 AM UTC)
     - cron: '30 11 * * *'   # 5:00 PM IST (11:30 AM UTC)
     # - cron: '30 13 * * *'   # 7:00 PM IST (1:30 PM UTC)
-    - cron: '30 15 * * *'   # 9:00 PM IST (3:30 PM UTC)
+    # - cron: '30 15 * * *'   # 9:00 PM IST (3:30 PM UTC)
 
 jobs:
   update-counter:
