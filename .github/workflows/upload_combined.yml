@@ -7,7 +7,7 @@ on:
     # - cron: '30 9 * * *'    # 3:00 PM IST (9:30 AM UTC)
     - cron: '30 11 * * *'   # 5:00 PM IST (11:30 AM UTC)
     # - cron: '30 13 * * *'   # 7:00 PM IST (1:30 PM UTC)
-    # - cron: '30 15 * * *'   # 9:00 PM IST (3:30 PM UTC)
+    - cron: '0 15 * * *'   # 8:30 PM IST (3:00 PM UTC)
 
 jobs:
   update-counter:
@@ -104,8 +104,8 @@ jobs:
         run: |
           git config --local user.name "github-actions"
           git config --local user.email "github-actions@github.com"
-          git add INSTAGRAM/.env
-          git commit -m "Update Instagram .env after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git add INSTAGRAM/.env INSTAGRAM/media_id.txt
+          git commit -m "Update Instagram .env and media log after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
           git pull --rebase origin main || echo "No changes to pull"
           git push || echo "No changes to push"
 
@@ -218,8 +218,8 @@ jobs:
         run: |
           git config --local user.name "github-actions"
           git config --local user.email "github-actions@github.com"
-          git add FACEBOOK/.env
-          git commit -m "Update Facebook .env after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
+          git add FACEBOOK/.env FACEBOOK/media_id.txt
+          git commit -m "Update Facebook .env and media log after reel_${{ needs.update-counter.outputs.reel_number }} upload" || echo "No changes to commit"
           git pull --rebase origin main || echo "No changes to pull"
           git push || echo "No changes to push"
 
