@@ -2,8 +2,9 @@ name: FACEBOOK DELETE SCHEDULER
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '30 11 * * *'  # Runs at 5:00 PM IST
+  schedule:
+    - cron: '0 18 * * *'   # 11:30 PM IST (6:00 PM UTC)
+    # - cron: '0 6 * * *'    # 11:30 AM IST (6:00 AM UTC)
   
 jobs:
   run-script:
@@ -14,7 +15,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          repository: DoctorAnimate/doctor.animate
+          repository: Paragoun/doctor.animate
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           sparse-checkout: |
             FACEBOOK/
@@ -40,3 +41,13 @@ jobs:
       # Run your Python script
       - name: Run Python script
         run: python3 FACEBOOK/facebook_delete.py
+
+      # Commit queue updates
+      - name: Commit and Push Queue Updates
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add FACEBOOK/media_id.txt
+          git commit -m "Update Facebook media delete queue" || echo "No changes to commit"
+          git pull --rebase origin main || echo "No changes to pull"
+          git push || echo "No changes to push"
