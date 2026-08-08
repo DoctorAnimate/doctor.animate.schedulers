@@ -3,8 +3,12 @@ name: VIDEO EDITING PART 2 - DOWNLOAD & ROTATE
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 5 * * *'    # 10:30 AM IST (5:00 AM UTC)
-    - cron: '0 15 * * *'    # 8:30 PM IST (3:00 PM UTC)
+    - cron: '30 15 * * *'    # 9:00 PM IST (3:00 PM UTC)
+    - cron: '0 16 * * *'     # 9:30 PM IST (4:00 PM UTC)
+    - cron: '30 16 * * *'    # 10:00 PM IST (4:30 PM UTC)
+    - cron: '0 17 * * *'     # 10:30 PM IST (5:00 PM UTC)
+    - cron: '30 17 * * *'    # 11:00 PM IST (5:30 PM UTC)
+    - cron: '0 18 * * *'     # 11:30 PM IST (6:00 PM UTC)
 
 jobs:
   download-and-rotate:
@@ -19,8 +23,8 @@ jobs:
           sparse-checkout: |
             REELS
             counter_video_editing.txt
-            kaggle_account_tracker.txt
-            kaggle_rotation.py
+            kaggle_account_download_tracker.txt
+            kaggle_download_rotation.py
           fetch-depth: 1
 
       # Pull latest changes
@@ -32,7 +36,7 @@ jobs:
       - name: Read Kaggle Account Number
         id: read_kaggle_account
         run: |
-          ACCOUNT_NUM=$(cat kaggle_account_tracker.txt)
+          ACCOUNT_NUM=$(cat kaggle_account_download_tracker.txt)
           echo "account_number=$ACCOUNT_NUM" >> $GITHUB_OUTPUT
           echo "📌 Current Kaggle account number: $ACCOUNT_NUM"
 
@@ -63,6 +67,18 @@ jobs:
             3)
               KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_3 }}"
               KAGGLE_KEY="${{ secrets.KAGGLE_KEY_3 }}"
+              ;;
+            4)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_4 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_4 }}"
+              ;;
+            5)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_5 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_5 }}"
+              ;;
+            6)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_6 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_6 }}"
               ;;
             *)
               echo "❌ Invalid account number: $ACCOUNT_NUM"
@@ -148,8 +164,8 @@ jobs:
       - name: Rotate Kaggle Account
         run: |
           echo "🔄 Rotating Kaggle account for next workflow run..."
-          python3 kaggle_rotation.py
-          NEXT_ACCOUNT=$(cat kaggle_account_tracker.txt)
+          python3 kaggle_download_rotation.py
+          NEXT_ACCOUNT=$(cat kaggle_account_download_tracker.txt)
           echo "✅ Next workflow will use Kaggle account: $NEXT_ACCOUNT"
 
       # Commit rotation
@@ -157,7 +173,7 @@ jobs:
         run: |
           git config --local user.name "github-actions"
           git config --local user.email "github-actions@github.com"
-          git add kaggle_account_tracker.txt
+          git add kaggle_account_download_tracker.txt
           git commit -m "Rotate Kaggle account tracker" || echo "No changes to commit"
           git push || echo "No changes to push"
 

@@ -3,8 +3,12 @@ name: VIDEO EDITING PART 1 - TRIGGER KAGGLE
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 18 * * *'   # 12:00 AM IST (6:30 PM UTC previous day)
-    - cron: '30 5 * * *'     # 11:00 AM IST (5:30 AM UTC)
+    - cron: '30 19 * * *'   # 1:00 AM IST (6:30 AM UTC)
+    - cron: '30 20 * * *'   # 2:00 AM IST (6:30 AM UTC)
+    - cron: '30 21 * * *'   # 3:00 AM IST (6:30 AM UTC)
+    - cron: '30 22 * * *'   # 4:00 AM IST (6:30 AM UTC)
+    - cron: '30 23 * * *'   # 5:00 AM IST (6:30 AM UTC)
+    - cron: '30 0 * * *'    # 6:00 AM IST (6:30 AM UTC)
 
 jobs:
   update-counter:
@@ -66,7 +70,8 @@ jobs:
             video_end_tracker.txt
             requirements.txt
             requirementswatermark.txt
-            kaggle_account_tracker.txt
+            kaggle_trigger_rotation.py
+            kaggle_account_trigger_tracker.txt
           fetch-depth: 1
 
       # Pull latest changes (includes updated counter)
@@ -78,7 +83,7 @@ jobs:
       - name: Read Kaggle Account Number
         id: read_kaggle_account
         run: |
-          ACCOUNT_NUM=$(cat kaggle_account_tracker.txt)
+          ACCOUNT_NUM=$(cat kaggle_account_trigger_tracker.txt)
           echo "account_number=$ACCOUNT_NUM" >> $GITHUB_OUTPUT
           echo "📌 Current Kaggle account number: $ACCOUNT_NUM"
 
@@ -101,6 +106,18 @@ jobs:
             3)
               KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_3 }}"
               KAGGLE_KEY="${{ secrets.KAGGLE_KEY_3 }}"
+              ;;
+            4)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_4 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_4 }}"
+              ;;
+            5)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_5 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_5 }}"
+              ;;
+            6)
+              KAGGLE_USERNAME="${{ secrets.KAGGLE_USERNAME_6 }}"
+              KAGGLE_KEY="${{ secrets.KAGGLE_KEY_6 }}"
               ;;
             *)
               echo "❌ Invalid account number: $ACCOUNT_NUM"
@@ -233,3 +250,26 @@ jobs:
           echo "✅ Notebook pushed to Kaggle successfully"
           echo "📌 Kaggle will process this in the background"
           echo "🕒 Part 2 workflow will download outputs in ~10 hours"
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'
+
+      # Rotate to next Kaggle account
+      - name: Rotate Kaggle Account
+        run: |
+          echo "🔄 Rotating Kaggle account for next workflow run..."
+          python3 kaggle_trigger_rotation.py
+          NEXT_ACCOUNT=$(cat kaggle_account_trigger_tracker.txt)
+          echo "✅ Next workflow will use Kaggle account: $NEXT_ACCOUNT"
+
+      # Commit rotation
+      - name: Commit Kaggle Rotation
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add kaggle_account_trigger_tracker.txt
+          git commit -m "Rotate Kaggle account tracker" || echo "No changes to commit"
+          git push || echo "No changes to push"
