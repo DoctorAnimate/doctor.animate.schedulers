@@ -5,9 +5,9 @@ on:
   schedule:
     # - cron: '30 7 * * *'    # 1:00 PM IST (7:30 AM UTC)
     # - cron: '30 9 * * *'    # 3:00 PM IST (9:30 AM UTC)
-    - cron: '30 8 * * *'   # 2:00 PM IST (11:30 AM UTC)
+    - cron: '30 5 * * *'   # 2:00 PM IST (11:30 AM UTC)
     # - cron: '30 13 * * *'   # 7:00 PM IST (1:30 PM UTC)
-    - cron: '0 12 * * *'   # 5:30 PM IST (3:00 PM UTC)
+    - cron: '0 9 * * *'   # 5:30 PM IST (3:00 PM UTC)
 
 jobs:
   update-counter:
@@ -30,7 +30,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.9'
+          python-version: '3.12'
 
       # Increment upload counter
       - name: Increment Counter
@@ -87,7 +87,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.9'
+          python-version: '3.12'
 
       # Install dependencies
       - name: Install Dependencies
@@ -143,7 +143,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.9'
+          python-version: '3.12'
 
       # Install dependencies
       - name: Install Dependencies
@@ -201,7 +201,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.9'
+          python-version: '3.12'
 
       # Install dependencies
       - name: Install Dependencies
@@ -257,7 +257,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.9'
+          python-version: '3.12'
 
       # Install dependencies
       - name: Install Dependencies
