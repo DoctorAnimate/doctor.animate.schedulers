@@ -54,7 +54,7 @@ jobs:
   instagram-post:
     needs: update-counter
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -112,7 +112,7 @@ jobs:
   instagram-story:
     needs: [update-counter, instagram-post]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -168,7 +168,7 @@ jobs:
   facebook-post:
     needs: [update-counter, instagram-story]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -226,7 +226,7 @@ jobs:
   facebook-story:
     needs: [update-counter, facebook-post]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       # Checkout repository
       - name: Checkout Code
