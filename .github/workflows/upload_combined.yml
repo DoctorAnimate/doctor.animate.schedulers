@@ -62,12 +62,10 @@ jobs:
             INSTAGRAM/local_tunnel.py
           fetch-depth: 1
 
-      # Configure sparse checkout for specific reel (only the needed file, not entire REELS/)
-      - name: Configure Sparse Checkout for Specific Reel
+      # Configure sparse checkout for REELS folder (cone mode requires directory, not file)
+      - name: Configure Sparse Checkout for REELS
         run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
-          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
 
       # Set up Python
@@ -127,12 +125,10 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for specific reel
-      - name: Configure Sparse Checkout for Specific Reel
+      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      - name: Configure Sparse Checkout for REELS
         run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
-          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
           
       # Set up Python
@@ -185,12 +181,10 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for specific reel
-      - name: Configure Sparse Checkout for Specific Reel
+      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      - name: Configure Sparse Checkout for REELS
         run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
-          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
       
       # Set up Python
@@ -245,12 +239,10 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for specific reel
-      - name: Configure Sparse Checkout for Specific Reel
+      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      - name: Configure Sparse Checkout for REELS
         run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
-          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
 
       # Set up Python
@@ -303,12 +295,10 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for specific reel
-      - name: Configure Sparse Checkout for Specific Reel
+      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      - name: Configure Sparse Checkout for REELS
         run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          echo "Setting sparse-checkout for reel_${REEL_NUMBER}.mp4"
-          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
+          echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
 
       # Set up Python
