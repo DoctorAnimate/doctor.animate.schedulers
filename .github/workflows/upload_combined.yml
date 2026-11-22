@@ -2,6 +2,12 @@ name: UPLOAD COMBINED (WITH COUNTER)
 
 on:
   workflow_dispatch:
+  # schedule:
+  #   - cron: '30 1 * * *'    # 1:00 PM IST (7:30 AM UTC)
+  #   # - cron: '30 9 * * *'    # 3:00 PM IST (9:30 AM UTC)
+  #   # - cron: '30 3 * * *'   # 2:00 PM IST (11:30 AM UTC)
+  #   # - cron: '30 13 * * *'   # 7:00 PM IST (1:30 PM UTC)
+  #   - cron: '0 5 * * *'   # 5:30 PM IST (3:00 PM UTC)
 
 jobs:
   update-counter:
@@ -45,66 +51,10 @@ jobs:
           git pull --rebase origin main || echo "No changes to pull"
           git push || echo "No changes to push"
 
-  setup-tunnel:
+  instagram-post:
     needs: update-counter
     runs-on: ubuntu-latest
-    outputs:
-      tunnel_url: ${{ steps.start_tunnel.outputs.tunnel_url }}
-      reel_number: ${{ needs.update-counter.outputs.reel_number }}
-    steps:
-      # Checkout repository - only need local_tunnel.py
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          repository: DoctorAnimate/doctor.animate
-          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
-          sparse-checkout: |
-            INSTAGRAM/local_tunnel.py
-          fetch-depth: 1
-
-      # Configure sparse checkout for REELS folder (cone mode requires directory, not file)
-      - name: Configure Sparse Checkout for REELS
-        run: |
-          echo "REELS/" >> .git/info/sparse-checkout
-          git sparse-checkout reapply
-
-      # Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-
-      # Install dependencies
-      - name: Install Dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install requests
-
-      # Start tunnel and get URL
-      - name: Start Cloudflare Tunnel
-        id: start_tunnel
-        run: |
-          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
-          python3 << 'EOF'
-          import sys
-          import os
-          sys.path.insert(0, '.')
-          from INSTAGRAM.local_tunnel import LocalTunnel
-          tunnel = LocalTunnel()
-          url = tunnel.start()
-          print(f'tunnel_url={url}')
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f'tunnel_url={url}\n')
-          EOF
-        env:
-          GITHUB_OUTPUT: ${{ github.output }}
-
-  instagram-post:
-    needs: [update-counter, setup-tunnel]
-    runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      TUNNEL_URL: ${{ needs.setup-tunnel.outputs.tunnel_url }}
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -125,7 +75,7 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      # Configure sparse checkout for REELS folder
       - name: Configure Sparse Checkout for REELS
         run: |
           echo "REELS/" >> .git/info/sparse-checkout
@@ -158,11 +108,9 @@ jobs:
           git push || echo "No changes to push"
 
   instagram-story:
-    needs: [update-counter, instagram-post, setup-tunnel]
+    needs: [update-counter, instagram-post]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      TUNNEL_URL: ${{ needs.setup-tunnel.outputs.tunnel_url }}
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -181,12 +129,12 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      # Configure sparse checkout for REELS folder
       - name: Configure Sparse Checkout for REELS
         run: |
           echo "REELS/" >> .git/info/sparse-checkout
           git sparse-checkout reapply
-      
+       
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -214,11 +162,9 @@ jobs:
           git push || echo "No changes to push"
 
   facebook-post:
-    needs: [update-counter, instagram-story, setup-tunnel]
+    needs: [update-counter, instagram-story]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      TUNNEL_URL: ${{ needs.setup-tunnel.outputs.tunnel_url }}
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -239,7 +185,7 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      # Configure sparse checkout for REELS folder
       - name: Configure Sparse Checkout for REELS
         run: |
           echo "REELS/" >> .git/info/sparse-checkout
@@ -272,11 +218,9 @@ jobs:
           git push || echo "No changes to push"
 
   facebook-story:
-    needs: [update-counter, facebook-post, setup-tunnel]
+    needs: [update-counter, facebook-post]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      TUNNEL_URL: ${{ needs.setup-tunnel.outputs.tunnel_url }}
     steps:
       # Checkout repository
       - name: Checkout Code
@@ -295,7 +239,7 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder (cone mode requires directory)
+      # Configure sparse checkout for REELS folder
       - name: Configure Sparse Checkout for REELS
         run: |
           echo "REELS/" >> .git/info/sparse-checkout
