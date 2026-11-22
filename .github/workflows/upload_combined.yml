@@ -69,10 +69,12 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder
-      - name: Configure Sparse Checkout for REELS
+      # Configure sparse checkout for specific reel file only (disable cone mode for file pattern)
+      - name: Configure Sparse Checkout for Specific Reel
         run: |
-          echo "REELS/" >> .git/info/sparse-checkout
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          git config core.sparseCheckoutCone false
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
           git sparse-checkout reapply
           
       # Set up Python
@@ -123,10 +125,12 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder
-      - name: Configure Sparse Checkout for REELS
+      # Configure sparse checkout for specific reel file only (disable cone mode for file pattern)
+      - name: Configure Sparse Checkout for Specific Reel
         run: |
-          echo "REELS/" >> .git/info/sparse-checkout
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          git config core.sparseCheckoutCone false
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
           git sparse-checkout reapply
        
       # Set up Python
@@ -179,10 +183,12 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder
-      - name: Configure Sparse Checkout for REELS
+      # Configure sparse checkout for specific reel file only (disable cone mode for file pattern)
+      - name: Configure Sparse Checkout for Specific Reel
         run: |
-          echo "REELS/" >> .git/info/sparse-checkout
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          git config core.sparseCheckoutCone false
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
           git sparse-checkout reapply
 
       # Set up Python
@@ -233,10 +239,12 @@ jobs:
       - name: Pull Latest Changes
         run: git pull origin main
 
-      # Configure sparse checkout for REELS folder
-      - name: Configure Sparse Checkout for REELS
+      # Configure sparse checkout for specific reel file only (disable cone mode for file pattern)
+      - name: Configure Sparse Checkout for Specific Reel
         run: |
-          echo "REELS/" >> .git/info/sparse-checkout
+          REEL_NUMBER="${{ needs.update-counter.outputs.reel_number }}"
+          git config core.sparseCheckoutCone false
+          echo "REELS/reel_${REEL_NUMBER}.mp4" >> .git/info/sparse-checkout
           git sparse-checkout reapply
 
       # Set up Python
